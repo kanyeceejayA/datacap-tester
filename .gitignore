@@ -1,0 +1,18 @@
+# All Python generated files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
+*.pyzwz
+*.pyzwzw
+venv/
+.venv/
+.env
+plan.md
+*.log
+data.json
+config.json

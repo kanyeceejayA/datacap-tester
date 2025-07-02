@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISP Data Cap Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons for professional look -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'pulse-slow': 'pulse 3s ease-in-out infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'gradient': 'gradient 8s ease infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        gradient: {
+                            '0%, 100%': {
+                                'background-size': '200% 200%',
+                                'background-position': 'left center'
+                            },
+                            '50%': {
+                                'background-size': '200% 200%',
+                                'background-position': 'right center'
+                            },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .professional-bg {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 25%, #475569 50%, #334155 75%, #1e293b 100%);
+            background-size: 400% 400%;
+            animation: gradient 20s ease infinite;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        
+        .accent-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .control-button {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .control-button.start:hover {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+        
+        .control-button.pause:hover {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%);
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+        
+        .control-button.stop:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+        
+        .control-button.reset:hover {
+            background: linear-gradient(135deg, rgba(107, 114, 128, 0.2) 0%, rgba(107, 114, 128, 0.1) 100%);
+            border-color: rgba(107, 114, 128, 0.4);
+        }
+        
+        .status-glow-running {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+        
+        .status-glow-paused {
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+        
+        .status-glow-stopped {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+        
+        .data-flow {
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+            animation: flow 2s linear infinite;
+        }
+        
+        @keyframes flow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+        
+        .header-accent {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 50%, rgba(139, 92, 246, 0.1) 100%);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .footer-accent {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+            border-top: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .floating-orb {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+            filter: blur(1px);
+        }
+        
+        /* Modal Animations */
+        .modal-backdrop {
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-content {
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-content.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen professional-bg overflow-x-hidden">
+    <!-- Session Mode Selection Modal -->
+    <div id="sessionModal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal-content glass-card rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="help-circle" class="w-8 h-8 text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Previous Session Found</h3>
+                <p class="text-slate-300 text-sm mb-6" id="sessionDetails">
+                    <!-- Session details will be populated here -->
+                </p>
+                
+                <div class="space-y-3">
+                    <button onclick="startSession(true)" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center">
+                        <i data-lucide="play-circle" class="w-5 h-5 mr-2"></i>
+                        Continue Session
+                    </button>
+                    <button onclick="startSession(false)" class="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center">
+                        <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>
+                        Start Fresh
+                    </button>
+                    <button onclick="closeSessionModal()" class="w-full bg-slate-600 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subtle floating elements -->
+    <div class="floating-elements">
+        <div class="floating-orb w-32 h-32 bg-blue-400 top-20 left-10 animate-float"></div>
+        <div class="floating-orb w-24 h-24 bg-purple-400 top-40 right-20 animate-pulse-slow"></div>
+        <div class="floating-orb w-40 h-40 bg-indigo-400 bottom-32 left-20 animate-float" style="animation-delay: 2s;"></div>
+        <div class="floating-orb w-20 h-20 bg-cyan-400 bottom-20 right-10 animate-pulse-slow" style="animation-delay: 4s;"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 relative z-10">
+        <!-- Professional Header with color accent -->
+        <div class="header-accent rounded-2xl p-8 mb-8 glass-card">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-white mb-3">
+                    ISP Data Cap Tester
+                </h1>
+                <p class="text-lg text-slate-300 font-medium mb-4">Professional Network Monitoring & Analysis</p>
+                <div class="flex justify-center items-center space-x-6 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>
+                        <span class="text-slate-300">System Online</span>
+                    </div>
+                    <div class="text-slate-400">•</div>
+                    <div id="currentTime" class="text-slate-300 font-mono"></div>
+                    <div class="text-slate-400">•</div>
+                    <div id="uptimeDisplay" class="text-slate-300 font-mono">Uptime: 00:00:00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compact Status & Control Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Status Panel (2/3 width) -->
+            <div class="lg:col-span-2">
+                <div class="glass-card rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <div class="w-4 h-4 rounded-full bg-red-500 status-glow-stopped" id="statusIndicator"></div>
+                                <div class="absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-30 bg-red-500" id="statusPing"></div>
+                            </div>
+                            <div>
+                                <div class="text-xl font-bold text-white" id="statusText">Stopped</div>
+                                <div class="text-slate-400 text-sm" id="statusSubtext">Ready to start testing</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-slate-400 text-xs uppercase tracking-wide">Last Update</div>
+                            <div class="text-white font-mono text-sm" id="lastUpdate">Never</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Flow Animation -->
+                    <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                        <div class="data-flow h-full w-20" id="dataFlow" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compact Control Center (1/3 width) -->
+            <div class="lg:col-span-1">
+                <div class="glass-card rounded-2xl p-6 shadow-xl h-full">
+                    <h3 class="text-lg font-semibold text-white mb-4 text-center">Control Center</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="startTest()" class="control-button start rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
+                            <i data-lucide="play" class="w-6 h-6 mb-2"></i>
+                            <span class="text-sm">Start</span>
+                        </button>
+                        <button onclick="pauseTest()" class="control-button pause rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
+                            <i data-lucide="pause" class="w-6 h-6 mb-2"></i>
+                            <span class="text-sm">Pause</span>
+                        </button>
+                        <button onclick="stopTest()" class="control-button stop rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
+                            <i data-lucide="square" class="w-6 h-6 mb-2"></i>
+                            <span class="text-sm">Stop</span>
+                        </button>
+                        <button onclick="resetStats()" class="control-button reset rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
+                            <i data-lucide="refresh-cw" class="w-6 h-6 mb-2"></i>
+                            <span class="text-sm">Reset</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Current Speed -->
+            <div class="metric-card rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-300 text-sm font-semibold uppercase tracking-wide">Current Speed</h3>
+                    <i data-lucide="activity" class="w-6 h-6 text-blue-400"></i>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1" id="currentSpeed">0.0</div>
+                <div class="text-slate-400 text-sm mb-3">Mbps</div>
+                <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-1000" id="speedBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Total Downloaded -->
+            <div class="metric-card rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-300 text-sm font-semibold uppercase tracking-wide">Total Downloaded</h3>
+                    <i data-lucide="download" class="w-6 h-6 text-green-400"></i>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1" id="totalData">0.0</div>
+                <div class="text-slate-400 text-sm mb-3">GB</div>
+                <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000" id="dataBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Peak Speed -->
+            <div class="metric-card rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-300 text-sm font-semibold uppercase tracking-wide">Peak Speed</h3>
+                    <i data-lucide="trending-up" class="w-6 h-6 text-purple-400"></i>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1" id="peakSpeed">0.0</div>
+                <div class="text-slate-400 text-sm mb-1">Mbps</div>
+                <div class="text-xs text-slate-500" id="peakSpeedTime">No data yet</div>
+            </div>
+
+            <!-- Average Speed -->
+            <div class="metric-card rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-slate-300 text-sm font-semibold uppercase tracking-wide">Average Speed</h3>
+                    <i data-lucide="bar-chart-3" class="w-6 h-6 text-orange-400"></i>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1" id="avgSpeed">0.0</div>
+                <div class="text-slate-400 text-sm mb-1">Mbps</div>
+                <div class="flex items-center">
+                    <span class="text-xs text-slate-500" id="speedConsistency">Stable</span>
+                    <div class="ml-2 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Speed Chart -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-white flex items-center">
+                        <i data-lucide="line-chart" class="w-5 h-5 mr-2 text-blue-400"></i>
+                        Speed Over Time
+                    </h3>
+                    <div class="flex items-center space-x-2 text-xs text-slate-400">
+                        <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+                        <span>Real-time</span>
+                    </div>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="speedChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <!-- Data Usage Chart -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-white flex items-center">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2 text-green-400"></i>
+                        Cumulative Usage
+                    </h3>
+                    <div class="flex items-center space-x-2 text-xs text-slate-400">
+                        <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                        <span>Total GB</span>
+                    </div>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="dataChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Network Information -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl">
+                <h3 class="text-lg font-semibold text-white mb-6 flex items-center">
+                    <i data-lucide="globe" class="w-5 h-5 mr-2 text-blue-400"></i>
+                    Network Info
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">External IP</span>
+                        <span id="externalIp" class="text-white font-mono bg-slate-700 px-2 py-1 rounded text-sm">Loading...</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">ISP Provider</span>
+                        <span id="isp" class="text-white font-medium text-sm">Loading...</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Location</span>
+                        <span id="location" class="text-white text-sm">Loading...</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Quality</span>
+                        <div class="flex items-center space-x-1">
+                            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <div class="w-2 h-2 bg-slate-600 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Statistics -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl">
+                <h3 class="text-lg font-semibold text-white mb-6 flex items-center">
+                    <i data-lucide="clock" class="w-5 h-5 mr-2 text-purple-400"></i>
+                    Session Stats
+                </h3>
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-white font-mono" id="sessionDuration">00:00:00</div>
+                        <div class="text-slate-400 text-sm">Duration</div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-sm">Assumed Data Cap Progress</span>
+                            <span id="capPercentage" class="text-white text-sm">0% used</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                            <div id="capProgress" class="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="text-center pt-2">
+                        <div class="text-lg font-semibold text-white" id="dataRate">0.0 GB/hr</div>
+                        <div class="text-slate-400 text-xs">Current Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl">
+                <h3 class="text-lg font-semibold text-white mb-6 flex items-center">
+                    <i data-lucide="monitor" class="w-5 h-5 mr-2 text-green-400"></i>
+                    System Health
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">CPU Usage</span>
+                        <div class="flex items-center">
+                            <div class="w-16 h-2 bg-slate-700 rounded-full mr-2">
+                                <div id="cpuBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 rounded-full transition-all duration-1000" style="width: 25%"></div>
+                            </div>
+                            <span id="cpuPercent" class="text-white text-sm">25%</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Memory Usage</span>
+                        <div class="flex items-center">
+                            <div class="w-16 h-2 bg-slate-700 rounded-full mr-2">
+                                <div id="memoryBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000" style="width: 45%"></div>
+                            </div>
+                            <span id="memoryPercent" class="text-white text-sm">45%</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Downloader</span>
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" id="downloaderStatus"></div>
+                            <span class="text-white text-sm" id="downloaderText">Ready</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Error Count</span>
+                        <div class="flex items-center">
+                            <span class="text-white text-sm" id="errorCount">0</span>
+                            <i data-lucide="alert-circle" class="w-4 h-4 ml-1 text-slate-400" id="errorIcon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Throttling Alert -->
+        <div id="throttleAlert" class="glass-card border-2 border-red-500 rounded-2xl p-6 mb-8 shadow-xl hidden">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center mr-4">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-red-400 mb-1">Throttling Detected</h3>
+                    <p class="text-red-300 text-sm">Your ISP may be limiting your connection speed. Consider checking your data usage or switching test servers.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Errors Alert -->
+        <div id="errorAlert" class="glass-card border-2 border-orange-500 rounded-2xl p-6 mb-8 shadow-xl hidden">
+            <div class="flex items-start">
+                <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                    <i data-lucide="wifi-off" class="w-6 h-6 text-white"></i>
+                </div>
+                <div class="flex-grow">
+                    <h3 class="text-xl font-bold text-orange-400 mb-2">Connection Issues Detected</h3>
+                    <div id="errorDetails" class="text-orange-300 text-sm space-y-1">
+                        <!-- Error details will be populated here -->
+                    </div>
+                    <button onclick="clearErrors()" class="mt-3 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-300">
+                        Acknowledge Errors
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Cap Exceeded - No Throttling Alert -->
+        <div id="capExceededAlert" class="glass-card border-2 border-green-500 rounded-2xl p-6 mb-8 shadow-xl hidden">
+            <div class="flex items-start">
+                <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                </div>
+                <div class="flex-grow">
+                    <h3 class="text-xl font-bold text-green-400 mb-2">Data Cap Exceeded - No Throttling Detected</h3>
+                    <div class="text-green-300 text-sm space-y-2">
+                        <div id="capExceededDetails">
+                            <!-- Cap exceeded details will be populated here -->
+                        </div>
+                        <div class="bg-green-900 bg-opacity-30 rounded-lg p-3 mt-3">
+                            <div class="text-green-200 text-sm">
+                                <div class="font-semibold mb-1">Next Steps:</div>
+                                <div class="space-y-1">
+                                    <div>• Continue monitoring to see if throttling occurs at higher usage</div>
+                                    <div>• Consider increasing your data cap threshold for future tests</div>
+                                    <div>• Your ISP may not enforce hard caps or may have different throttling points</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="acknowledgeCapExceeded()" class="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-300">
+                        Acknowledge & Continue Monitoring
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Health Panel -->
+        <div class="glass-card rounded-2xl p-6 mb-8 shadow-xl">
+            <h3 class="text-lg font-semibold text-white mb-6 flex items-center">
+                <i data-lucide="activity" class="w-5 h-5 mr-2 text-cyan-400"></i>
+                Connection Health Monitor
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white mb-1" id="connectionUptime">00:00:00</div>
+                    <div class="text-slate-400 text-sm">Uptime</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white mb-1" id="successfulRequests">0</div>
+                    <div class="text-slate-400 text-sm">Successful</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white mb-1" id="failedRequests">0</div>
+                    <div class="text-slate-400 text-sm">Failed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white mb-1" id="successRate">100%</div>
+                    <div class="text-slate-400 text-sm">Success Rate</div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-slate-400 text-sm">Connection Stability</span>
+                    <span class="text-white text-sm" id="stabilityText">Excellent</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-2">
+                    <div id="stabilityBar" class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Downloader Logs Panel -->
+        <div class="glass-card rounded-2xl p-6 mb-8 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                    <i data-lucide="terminal" class="w-5 h-5 mr-2 text-green-400"></i>
+                    Downloader Logs
+                </h3>
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleAutoScroll()" id="autoScrollBtn" class="text-xs bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded-lg transition-colors duration-300">
+                        Auto-scroll: ON
+                    </button>
+                    <button onclick="refreshLogs()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors duration-300 flex items-center">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
+                        Refresh
+                    </button>
+                    <button onclick="toggleLogs()" id="logsToggleBtn" class="text-xs bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded-lg transition-colors duration-300">
+                        <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="logsContainer" class="transition-all duration-300">
+                <div id="logsContent" class="bg-slate-800 rounded-lg p-4 h-64 overflow-y-auto font-mono text-sm text-slate-300">
+                    <div class="text-slate-500">Loading logs...</div>
+                </div>
+                <div class="mt-2 text-xs text-slate-400 flex justify-between">
+                    <span id="logsStatus">Checking for logs...</span>
+                    <span id="logsCount">0 lines</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Footer with subtle accent -->
+        <div class="footer-accent rounded-2xl p-6 glass-card">
+            <div class="text-center">
+                <p class="text-slate-300 text-sm mb-3">ISP Data Cap Tester • Professional Network Monitoring</p>
+                <div class="flex justify-center items-center space-x-4 text-xs text-slate-400">
+                    <span>Server: localhost:8000</span>
+                    <span>•</span>
+                    <span>WebSocket: Connected</span>
+                    <span>•</span>
+                    <span>Version 1.0.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let speedChart, dataChart;
+        let websocket;
+        let startTime = Date.now();
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Initialize charts with professional styling
+        function initCharts() {
+            Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+
+            const speedCtx = document.getElementById('speedChart').getContext('2d');
+            speedChart = new Chart(speedCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Speed (Mbps)',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: function(context) {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return;
+                            
+                            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
+                            return gradient;
+                        },
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { maxTicksLimit: 8 }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+
+            const dataCtx = document.getElementById('dataChart').getContext('2d');
+            dataChart = new Chart(dataCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Data Usage (GB)',
+                        data: [],
+                        borderColor: '#22c55e',
+                        backgroundColor: function(context) {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return;
+                            
+                            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                            gradient.addColorStop(0, 'rgba(34, 197, 94, 0.2)');
+                            gradient.addColorStop(1, 'rgba(34, 197, 94, 0.02)');
+                            return gradient;
+                        },
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#22c55e',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { maxTicksLimit: 8 }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Professional notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                warning: 'bg-yellow-600',
+                info: 'bg-blue-600'
+            };
+            
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform translate-x-full transition-transform duration-300`;
+            notification.innerHTML = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(full)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Error handling functions
+        function updateErrorDisplay(data) {
+            const errorAlert = document.getElementById('errorAlert');
+            const errorDetails = document.getElementById('errorDetails');
+            const errorCount = document.getElementById('errorCount');
+            const errorIcon = document.getElementById('errorIcon');
+            
+            // Update error count
+            const errors = data.errors || [];
+            errorCount.textContent = errors.length;
+            
+            if (errors.length > 0) {
+                // Show error alert
+                errorAlert.classList.remove('hidden');
+                
+                // Update error icon color
+                errorIcon.className = 'w-4 h-4 ml-1 text-red-400';
+                
+                // Display error details
+                errorDetails.innerHTML = '';
+                errors.slice(-5).forEach(error => { // Show last 5 errors
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'flex justify-between items-start py-1';
+                    
+                    const time = new Date(error.timestamp).toLocaleTimeString();
+                    const errorMsg = error.error.length > 60 ? error.error.substring(0, 60) + '...' : error.error;
+                    
+                    errorDiv.innerHTML = `
+                        <div class="flex-grow">
+                            <span class="font-mono text-xs text-orange-200">${time}</span>
+                            <div class="text-sm">${errorMsg}</div>
+                            <div class="text-xs text-orange-400">${error.url}</div>
+                        </div>
+                    `;
+                    errorDetails.appendChild(errorDiv);
+                });
+            } else {
+                // Hide error alert
+                errorAlert.classList.add('hidden');
+                errorIcon.className = 'w-4 h-4 ml-1 text-slate-400';
+            }
+            
+            // Update connection health
+            updateConnectionHealth(data);
+        }
+        
+        function updateConnectionHealth(data) {
+            const errors = data.errors || [];
+            const dataPoints = data.data_points || [];
+            
+            // Calculate metrics
+            let successfulRequests = dataPoints.length;
+            let failedRequests = errors.length;
+            let totalRequests = successfulRequests + failedRequests;
+            let successRate = totalRequests > 0 ? ((successfulRequests / totalRequests) * 100) : 100;
+            
+            // Update display
+            document.getElementById('successfulRequests').textContent = successfulRequests;
+            document.getElementById('failedRequests').textContent = failedRequests;
+            document.getElementById('successRate').textContent = `${successRate.toFixed(1)}%`;
+            
+            // Update connection uptime
+            if (data.session_start) {
+                const start = new Date(data.session_start);
+                const now = new Date();
+                const uptimeMs = now - start;
+                const uptimeHours = Math.floor(uptimeMs / 3600000);
+                const uptimeMinutes = Math.floor((uptimeMs % 3600000) / 60000);
+                const uptimeSeconds = Math.floor((uptimeMs % 60000) / 1000);
+                document.getElementById('connectionUptime').textContent = 
+                    `${uptimeHours.toString().padStart(2, '0')}:${uptimeMinutes.toString().padStart(2, '0')}:${uptimeSeconds.toString().padStart(2, '0')}`;
+            }
+            
+            // Update stability indicator
+            const stabilityBar = document.getElementById('stabilityBar');
+            const stabilityText = document.getElementById('stabilityText');
+            
+            if (successRate >= 95) {
+                stabilityBar.className = 'h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-1000';
+                stabilityBar.style.width = `${successRate}%`;
+                stabilityText.textContent = 'Excellent';
+            } else if (successRate >= 85) {
+                stabilityBar.className = 'h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full transition-all duration-1000';
+                stabilityBar.style.width = `${successRate}%`;
+                stabilityText.textContent = 'Good';
+            } else if (successRate >= 70) {
+                stabilityBar.className = 'h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-1000';
+                stabilityBar.style.width = `${successRate}%`;
+                stabilityText.textContent = 'Fair';
+            } else {
+                stabilityBar.className = 'h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all duration-1000';
+                stabilityBar.style.width = `${Math.max(successRate, 10)}%`;
+                stabilityText.textContent = 'Poor';
+            }
+        }
+        
+        async function clearErrors() {
+            try {
+                const response = await fetch('/api/clear-errors', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('Errors cleared', 'success');
+                    document.getElementById('errorAlert').classList.add('hidden');
+                }
+            } catch (error) {
+                showNotification('Failed to clear errors', 'error');
+            }
+        }
+
+        // Data cap exceeded acknowledgment
+        let capExceededAcknowledged = false;
+        
+        function acknowledgeCapExceeded() {
+            capExceededAcknowledged = true;
+            document.getElementById('capExceededAlert').classList.add('hidden');
+            showNotification('Continuing to monitor for throttling at higher usage levels', 'info');
+        }
+
+        // API functions
+        async function startTest() {
+            try {
+                // First check if there's a previous session to resume
+                const resumeCheck = await fetch('/api/can-resume');
+                const resumeData = await resumeCheck.json();
+                
+                if (resumeData.can_resume) {
+                    // Show modal to choose between continue or start fresh
+                    showSessionModal(resumeData.previous_data);
+                } else {
+                    // No previous data, start fresh directly
+                    await actuallyStartTest(false);
+                }
+            } catch (error) {
+                showNotification('Error checking session status: ' + error.message, 'error');
+            }
+        }
+
+        function showSessionModal(previousData) {
+            const modal = document.getElementById('sessionModal');
+            const modalContent = modal.querySelector('.modal-content');
+            const sessionDetails = document.getElementById('sessionDetails');
+            
+            // Format the session details
+            const totalGB = previousData.total_gb || 0;
+            const duration = previousData.session_duration || 0;
+            const hours = Math.floor(duration / 3600);
+            const minutes = Math.floor((duration % 3600) / 60);
+            const lastUpdate = previousData.last_update ? new Date(previousData.last_update).toLocaleString() : 'Unknown';
+            
+            let durationText = '';
+            if (hours > 0) {
+                durationText = `${hours}h ${minutes}m`;
+            } else if (minutes > 0) {
+                durationText = `${minutes} minutes`;
+            } else {
+                durationText = `${duration} seconds`;
+            }
+            
+            sessionDetails.innerHTML = `
+                <div class="text-left space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Data Downloaded:</span>
+                        <span class="text-white font-mono">${totalGB.toFixed(2)} GB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Session Duration:</span>
+                        <span class="text-white">${durationText}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Last Active:</span>
+                        <span class="text-white text-xs">${lastUpdate}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Show modal with animation
+            modal.classList.remove('hidden');
+            
+            // Trigger animation after a brief delay
+            setTimeout(() => {
+                modalContent.classList.add('show');
+            }, 10);
+            
+            // Refresh icons for the modal
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        }
+
+        function closeSessionModal() {
+            const modal = document.getElementById('sessionModal');
+            const modalContent = modal.querySelector('.modal-content');
+            
+            // Animate out
+            modalContent.classList.remove('show');
+            
+            // Hide modal after animation
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function startSession(resume) {
+            closeSessionModal();
+            await actuallyStartTest(resume);
+        }
+
+        async function actuallyStartTest(resume) {
+            try {
+                const endpoint = resume ? '/api/start-resume' : '/api/start';
+                const response = await fetch(endpoint, { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    const message = resume ? 'Session resumed successfully' : 'Fresh test started successfully';
+                    showNotification(message, 'success');
+                } else {
+                    showNotification('Failed to start test', 'error');
+                }
+            } catch (error) {
+                showNotification('Error starting test: ' + error.message, 'error');
+            }
+        }
+
+        async function stopTest() {
+            try {
+                const response = await fetch('/api/stop', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Test stopped successfully', 'success');
+                } else {
+                    showNotification('Failed to stop test', 'error');
+                }
+            } catch (error) {
+                showNotification('Error stopping test: ' + error.message, 'error');
+            }
+        }
+
+        async function pauseTest() {
+            try {
+                const response = await fetch('/api/pause', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Test paused successfully', 'warning');
+                } else {
+                    showNotification('Failed to pause test', 'error');
+                }
+            } catch (error) {
+                showNotification('Error pausing test: ' + error.message, 'error');
+            }
+        }
+
+        async function resetStats() {
+            if (confirm('Are you sure you want to reset all statistics?')) {
+                try {
+                    const response = await fetch('/api/reset', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                        showNotification('Statistics reset successfully', 'success');
+                        // Reset acknowledgment state
+                        capExceededAcknowledged = false;
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Failed to reset statistics', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Error resetting statistics: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Enhanced UI updates
+        function updateUI(data) {
+            // Update status
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const statusSubtext = document.getElementById('statusSubtext');
+            const statusPing = document.getElementById('statusPing');
+            const dataFlow = document.getElementById('dataFlow');
+            
+            statusIndicator.className = 'w-4 h-4 rounded-full ';
+            statusPing.className = 'absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-30 ';
+            
+            if (data.status === 'running') {
+                statusIndicator.className += 'bg-green-500 status-glow-running';
+                statusPing.className += 'bg-green-500';
+                statusText.textContent = 'Running';
+                statusSubtext.textContent = 'Actively monitoring bandwidth';
+                dataFlow.style.display = 'block';
+            } else if (data.status === 'paused') {
+                statusIndicator.className += 'bg-yellow-500 status-glow-paused';
+                statusPing.className += 'bg-yellow-500';
+                statusText.textContent = 'Paused';
+                statusSubtext.textContent = 'Test temporarily suspended';
+                dataFlow.style.display = 'none';
+            } else {
+                statusIndicator.className += 'bg-red-500 status-glow-stopped';
+                statusPing.className += 'bg-red-500';
+                statusText.textContent = 'Stopped';
+                statusSubtext.textContent = 'Ready to start testing';
+                dataFlow.style.display = 'none';
+            }
+
+            // Update error information
+            updateErrorDisplay(data);
+
+            // Update metrics
+            const currentSpeed = parseFloat(data.speed_mbps || 0);
+            const maxSpeed = 100;
+            
+            document.getElementById('currentSpeed').textContent = currentSpeed.toFixed(1);
+            document.getElementById('speedBar').style.width = `${Math.min(100, (currentSpeed / maxSpeed) * 100)}%`;
+            
+            const totalGB = parseFloat(data.total_gb || 0);
+            const maxGB = parseFloat(data.data_cap_gb || 50);
+            
+            document.getElementById('totalData').textContent = totalGB.toFixed(2);
+            document.getElementById('dataBar').style.width = `${Math.min(100, (totalGB / maxGB) * 100)}%`;
+            
+            document.getElementById('peakSpeed').textContent = (data.peak_speed || 0).toFixed(1);
+            document.getElementById('avgSpeed').textContent = (data.avg_speed || 0).toFixed(1);
+
+            // Update session duration
+            if (data.session_duration) {
+                const hours = Math.floor(data.session_duration / 3600);
+                const minutes = Math.floor((data.session_duration % 3600) / 60);
+                const seconds = data.session_duration % 60;
+                document.getElementById('sessionDuration').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                if (data.session_duration > 0) {
+                    const dataRateGBPerHour = (totalGB / data.session_duration) * 3600;
+                    document.getElementById('dataRate').textContent = `${dataRateGBPerHour.toFixed(1)} GB/hr`;
+                }
+            }
+
+            // Update data cap progress
+            if (data.cap_percentage !== undefined) {
+                const percentage = data.cap_percentage;
+                // Keep progress bar visual capped at 100% for display, but show actual percentage in text
+                const progressBarWidth = Math.min(100, percentage);
+                document.getElementById('capProgress').style.width = `${progressBarWidth}%`;
+                document.getElementById('capPercentage').textContent = `${percentage.toFixed(1)}% used`;
+                
+                // Change color scheme when over 100%
+                const progressBar = document.getElementById('capProgress');
+                if (percentage > 100) {
+                    progressBar.className = 'h-full bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-full transition-all duration-1000';
+                } else {
+                    progressBar.className = 'h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-full transition-all duration-1000';
+                }
+            }
+
+            // Update throttling alert
+            const throttleAlert = document.getElementById('throttleAlert');
+            if (data.throttle_detected) {
+                throttleAlert.classList.remove('hidden');
+            } else {
+                throttleAlert.classList.add('hidden');
+            }
+
+            // Update data cap exceeded alert (show only if cap exceeded, no throttling, and not acknowledged)
+            const capExceededAlert = document.getElementById('capExceededAlert');
+            const capExceededDetails = document.getElementById('capExceededDetails');
+            
+            if (data.cap_percentage > 100 && !data.throttle_detected && !capExceededAcknowledged) {
+                const excessPercentage = data.cap_percentage - 100;
+                const excessGB = (data.total_gb - data.data_cap_gb).toFixed(2);
+                const avgSpeed = data.avg_speed || 0;
+                const currentSpeed = data.speed_mbps || 0;
+                
+                capExceededDetails.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-200">Data Cap Threshold:</span>
+                            <span class="text-white font-mono">${data.data_cap_gb} GB</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-200">Current Usage:</span>
+                            <span class="text-white font-mono">${data.total_gb.toFixed(2)} GB</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-200">Excess Usage:</span>
+                            <span class="text-white font-mono">${excessGB} GB (+${excessPercentage.toFixed(1)}%)</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-200">Current Speed:</span>
+                            <span class="text-white font-mono">${currentSpeed.toFixed(1)} Mbps</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-200">Average Speed:</span>
+                            <span class="text-white font-mono">${avgSpeed.toFixed(1)} Mbps</span>
+                        </div>
+                        <div class="bg-green-800 bg-opacity-40 rounded-lg p-2 mt-2">
+                            <div class="text-green-100 text-xs">
+                                <strong>Good News:</strong> No speed degradation detected despite exceeding your configured data cap. 
+                                Your ISP may not enforce this limit or may have different throttling thresholds.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                capExceededAlert.classList.remove('hidden');
+                
+                // Refresh icons for the new alert content
+                setTimeout(() => {
+                    lucide.createIcons();
+                }, 100);
+            } else {
+                capExceededAlert.classList.add('hidden');
+            }
+
+            // Update last update time
+            if (data.last_update) {
+                const lastUpdate = new Date(data.last_update);
+                document.getElementById('lastUpdate').textContent = lastUpdate.toLocaleTimeString();
+            }
+
+            // Update charts
+            if (data.data_points && data.data_points.length > 0) {
+                const labels = data.data_points.map(point => {
+                    const time = new Date(point.timestamp);
+                    return time.toLocaleTimeString();
+                }).slice(-20); // Show last 20 points
+                
+                const speeds = data.data_points.map(point => point.speed_mbps).slice(-20);
+                const usage = data.data_points.map(point => point.total_gb).slice(-20);
+
+                speedChart.data.labels = labels;
+                speedChart.data.datasets[0].data = speeds;
+                speedChart.update('none');
+
+                dataChart.data.labels = labels;
+                dataChart.data.datasets[0].data = usage;
+                dataChart.update('none');
+            }
+
+            // Update downloader status
+            if (data.downloader_running) {
+                document.getElementById('downloaderStatus').className = 'w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse';
+                document.getElementById('downloaderText').textContent = 'Active';
+            } else {
+                document.getElementById('downloaderStatus').className = 'w-2 h-2 bg-red-400 rounded-full mr-2';
+                document.getElementById('downloaderText').textContent = 'Stopped';
+            }
+        }
+
+        // Load system information
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch('/api/system');
+                const systemInfo = await response.json();
+                
+                document.getElementById('externalIp').textContent = systemInfo.external_ip || 'Unknown';
+                document.getElementById('isp').textContent = systemInfo.isp || 'Unknown';
+                document.getElementById('location').textContent = 
+                    `${systemInfo.city || 'Unknown'}, ${systemInfo.country || 'Unknown'}`;
+                    
+                if (systemInfo.cpu_percent !== undefined) {
+                    const cpuPercent = Math.round(systemInfo.cpu_percent);
+                    document.getElementById('cpuPercent').textContent = `${cpuPercent}%`;
+                    document.getElementById('cpuBar').style.width = `${cpuPercent}%`;
+                }
+                
+                if (systemInfo.memory_percent !== undefined) {
+                    const memPercent = Math.round(systemInfo.memory_percent);
+                    document.getElementById('memoryPercent').textContent = `${memPercent}%`;
+                    document.getElementById('memoryBar').style.width = `${memPercent}%`;
+                }
+                
+            } catch (error) {
+                console.error('Error loading system info:', error);
+            }
+        }
+
+        // WebSocket connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            websocket = new WebSocket(wsUrl);
+            
+            websocket.onopen = function() {
+                showNotification('Connected to server', 'success');
+            };
+            
+            websocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateUI(data);
+            };
+            
+            websocket.onclose = function() {
+                showNotification('Connection lost. Reconnecting...', 'warning');
+                setTimeout(initWebSocket, 5000);
+            };
+            
+            websocket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Update time displays
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+            
+            const uptime = Date.now() - startTime;
+            const hours = Math.floor(uptime / 3600000);
+            const minutes = Math.floor((uptime % 3600000) / 60000);
+            const seconds = Math.floor((uptime % 60000) / 1000);
+            document.getElementById('uptimeDisplay').textContent = 
+                `Uptime: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize everything
+        window.onload = function() {
+            initCharts();
+            loadSystemInfo();
+            initWebSocket();
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Initialize logs
+            loadLogs();
+            setInterval(loadLogs, 5000); // Refresh logs every 5 seconds
+            
+            // Initialize icons (including new ones)
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+            
+            showNotification('Dashboard loaded successfully', 'success');
+        };
+
+        // Logs functionality
+        let autoScroll = true;
+        let logsVisible = true;
+
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayLogs(result.logs, result.total_lines);
+                    document.getElementById('logsStatus').textContent = 'Connected';
+                } else {
+                    document.getElementById('logsStatus').textContent = 'Error: ' + result.error;
+                }
+            } catch (error) {
+                document.getElementById('logsStatus').textContent = 'Connection failed';
+                console.error('Error loading logs:', error);
+            }
+        }
+
+        function displayLogs(logs, totalLines) {
+            const logsContent = document.getElementById('logsContent');
+            const logsCount = document.getElementById('logsCount');
+            
+            // Update logs display
+            const logLines = logs.map(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return '';
+                
+                // Add color coding for different log levels
+                let className = 'text-slate-300';
+                if (trimmedLine.includes('ERROR') || trimmedLine.includes('❌')) {
+                    className = 'text-red-400';
+                } else if (trimmedLine.includes('WARNING') || trimmedLine.includes('⚠️')) {
+                    className = 'text-yellow-400';
+                } else if (trimmedLine.includes('📈') || trimmedLine.includes('🚀') || trimmedLine.includes('✅')) {
+                    className = 'text-green-400';
+                } else if (trimmedLine.includes('📊') || trimmedLine.includes('💾')) {
+                    className = 'text-blue-400';
+                } else if (trimmedLine.includes('🚨')) {
+                    className = 'text-red-500 font-bold';
+                }
+                
+                return `<div class="${className}">${escapeHtml(trimmedLine)}</div>`;
+            }).join('');
+            
+            logsContent.innerHTML = logLines || '<div class="text-slate-500">No logs available</div>';
+            logsCount.textContent = `${totalLines} lines`;
+            
+            // Auto-scroll to bottom if enabled
+            if (autoScroll) {
+                logsContent.scrollTop = logsContent.scrollHeight;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function refreshLogs() {
+            loadLogs();
+            showNotification('Logs refreshed', 'info');
+        }
+
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const btn = document.getElementById('autoScrollBtn');
+            btn.textContent = `Auto-scroll: ${autoScroll ? 'ON' : 'OFF'}`;
+            btn.className = `text-xs ${autoScroll ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'} text-white px-3 py-1 rounded-lg transition-colors duration-300`;
+            
+            if (autoScroll) {
+                const logsContent = document.getElementById('logsContent');
+                logsContent.scrollTop = logsContent.scrollHeight;
+            }
+        }
+
+        function toggleLogs() {
+            const container = document.getElementById('logsContainer');
+            const btn = document.getElementById('logsToggleBtn');
+            const icon = btn.querySelector('i');
+            
+            logsVisible = !logsVisible;
+            
+            if (logsVisible) {
+                container.style.maxHeight = 'none';
+                container.style.opacity = '1';
+                icon.setAttribute('data-lucide', 'chevron-down');
+            } else {
+                container.style.maxHeight = '0';
+                container.style.opacity = '0';
+                icon.setAttribute('data-lucide', 'chevron-up');
+            }
+            
+            // Refresh icons
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        }
+    </script>
+</body>
+</html> 
