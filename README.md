@@ -1,4 +1,4 @@
-# 🌐 ISP Data Cap Tester – Verify Your Internet Performance
+# ISP Data Cap Tester – Verify Your Internet Performance
 
 > Open-source dashboard to measure real-world connection speed, monitor data usage, and flag potential throttling.
 
@@ -10,11 +10,11 @@ Are you paying for "up to 100 Mbps" but only getting 20 Mbps? Suspicious that yo
 *Click image to see [full dashboard screenshot](img/full_page_screenshot.png)*
 
 ### What This Tool Does
-✅ **Continuously monitors your actual internet speed**  
-✅ **Detects when your ISP throttles your connection**  
-✅ **Tracks data usage and identifies hidden caps**  
-✅ **Runs 24/7 with a beautiful web dashboard**  
-✅ **Alerts you instantly when throttling is detected**  
+✅ Continuously monitors your actual internet speed  
+✅ Detects when your ISP throttles your connection  
+✅ Tracks data usage and identifies hidden caps  
+✅ Runs 24/7 with a beautiful web dashboard  
+✅ Alerts you instantly when throttling is detected  
 
 ![Network Details](img/details_and_alerts.png)
 *Real-time network monitoring with ISP details and throttling alerts*
@@ -52,12 +52,6 @@ The tool now runs in the background and continually updates the dashboard with c
 - **Live statistics** updating every second  
 - **Professional design** that looks like enterprise software
 - **Mobile responsive** - monitor from your phone
-
-### 🕵️ Advanced ISP Detection
-- **Automatic ISP identification** - knows who your provider is
-- **Baseline speed measurement** - learns your normal speeds
-- **Throttling pattern recognition** - catches sneaky slowdowns
-- **Data cap threshold detection** - identifies when limits kick in
 
 ### 📊 Smart Analytics
 - **Performance analysis** - shows if you're getting what you pay for
