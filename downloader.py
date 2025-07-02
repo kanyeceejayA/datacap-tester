@@ -17,12 +17,12 @@ from pathlib import Path
 import httpx
 import statistics
 
-# Setup logging to file
+# Setup logging to file with UTF-8 encoding for Windows compatibility
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(message)s',
     handlers=[
-        logging.FileHandler('downloader.log'),
+        logging.FileHandler('downloader.log', encoding='utf-8'),
         logging.StreamHandler()  # Also print to console
     ]
 )
@@ -51,6 +51,15 @@ class DownloadTester:
         self.speed_history = []
         self.baseline_speed = None
         self.throttle_detected = False
+        
+        # Speed performance tracking relative to expected speed
+        self.expected_speed = self.config.get("expected_speed_mbps", 60)
+        self.performance_samples = []  # Store performance category for each measurement
+        self.performance_stats = {
+            "close_to_expected": 0,      # Within ±20% of expected
+            "far_below_expected": 0,     # Less than 80% of expected  
+            "far_above_expected": 0      # More than 120% of expected
+        }
         
         # Load previous state if resuming
         if self.resume_session:
@@ -118,6 +127,18 @@ class DownloadTester:
         speed_mbps = megabits / time_taken
         return speed_mbps
 
+    def categorize_speed_performance(self, speed_mbps: float) -> str:
+        """Categorize speed performance relative to expected speed."""
+        close_threshold_low = self.expected_speed * 0.8   # 80% of expected
+        close_threshold_high = self.expected_speed * 1.2  # 120% of expected
+        
+        if speed_mbps < close_threshold_low:
+            return "far_below_expected"
+        elif speed_mbps > close_threshold_high:
+            return "far_above_expected"
+        else:
+            return "close_to_expected"
+
     def update_statistics(self, speed_mbps: float):
         """Update rolling statistics and detect throttling."""
         now = datetime.now(timezone.utc)
@@ -131,11 +152,24 @@ class DownloadTester:
         if speed_mbps > self.peak_speed:
             self.peak_speed = speed_mbps
         
-        # Add data point for charting
+        # Track performance relative to expected speed
+        performance_category = self.categorize_speed_performance(speed_mbps)
+        self.performance_samples.append(performance_category)
+        
+        # Keep only last 1000 performance samples to prevent memory issues
+        if len(self.performance_samples) > 1000:
+            self.performance_samples.pop(0)
+        
+        # Update performance statistics
+        self.update_performance_stats()
+        
+        # Add data point for charting (including performance info)
         self.data_points.append({
             "timestamp": now.isoformat(),
             "speed_mbps": speed_mbps,
-            "total_gb": self.total_bytes / (1024**3)
+            "total_gb": self.total_bytes / (1024**3),
+            "performance_category": performance_category,
+            "expected_speed": self.expected_speed
         })
         
         # Keep only last 1000 data points to prevent memory issues
@@ -144,6 +178,18 @@ class DownloadTester:
         
         # Throttling detection
         self.detect_throttling(speed_mbps)
+
+    def update_performance_stats(self):
+        """Update percentage statistics for speed performance categories."""
+        if not self.performance_samples:
+            return
+        
+        total_samples = len(self.performance_samples)
+        self.performance_stats = {
+            "close_to_expected": (self.performance_samples.count("close_to_expected") / total_samples) * 100,
+            "far_below_expected": (self.performance_samples.count("far_below_expected") / total_samples) * 100,
+            "far_above_expected": (self.performance_samples.count("far_above_expected") / total_samples) * 100
+        }
 
     def detect_throttling(self, current_speed: float):
         """Detect if ISP is throttling based on speed patterns over time."""
@@ -243,7 +289,17 @@ class DownloadTester:
             "baseline_speed": round(self.baseline_speed or 0, 2),
             "data_cap_gb": self.config.get("data_cap_gb", 100),
             "cap_percentage": (self.total_bytes / (1024**3)) / self.config.get("data_cap_gb", 100) * 100,
-            "speed_history": speed_history_data
+            "speed_history": speed_history_data,
+            "expected_speed_mbps": self.expected_speed,
+            "performance_stats": {
+                "close_to_expected": round(self.performance_stats["close_to_expected"], 1),
+                "far_below_expected": round(self.performance_stats["far_below_expected"], 1),
+                "far_above_expected": round(self.performance_stats["far_above_expected"], 1)
+            },
+            "performance_thresholds": {
+                "close_range_low": round(self.expected_speed * 0.8, 1),
+                "close_range_high": round(self.expected_speed * 1.2, 1)
+            }
         }
         
         try:
@@ -371,6 +427,18 @@ class DownloadTester:
                             "speed": entry["speed"],
                             "timestamp": datetime.fromisoformat(entry["timestamp"])
                         })
+                
+                # Restore performance tracking data
+                self.expected_speed = previous_data.get("expected_speed_mbps", self.config.get("expected_speed_mbps", 60))
+                restored_performance_stats = previous_data.get("performance_stats", {})
+                if restored_performance_stats:
+                    self.performance_stats = restored_performance_stats
+                
+                # Rebuild performance samples from data points if available
+                self.performance_samples = []
+                for point in self.data_points:
+                    if isinstance(point, dict) and "performance_category" in point:
+                        self.performance_samples.append(point["performance_category"])
                 
                 # Adjust session start time to account for previous duration
                 prev_duration = previous_data.get("session_duration", 0)
