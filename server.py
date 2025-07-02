@@ -18,7 +18,7 @@ from typing import Dict, Optional, Set
 import requests
 import psutil
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -57,10 +57,23 @@ class DataCapTesterServer:
             return {"port": 8000, "data_cap_gb": 50}
 
     def load_data(self) -> Dict:
-        """Load current statistics from data.json."""
+        """Load current statistics from data.json and verify process status."""
         try:
             with open(self.data_path, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+            
+            # Check if status says running/paused but no process is actually running
+            if data.get("status") in ["running", "paused"] and not self.is_downloader_running():
+                print("⚠️ Data file indicates running/paused status but no downloader process found - correcting status to stopped")
+                data["status"] = "stopped"
+                # Save the corrected status
+                try:
+                    with open(self.data_path, 'w') as f:
+                        json.dump(data, f, indent=2)
+                except:
+                    pass  # Don't fail if we can't save the correction
+            
+            return data
         except Exception as e:
             print(f"Error loading data: {e}")
             return {
@@ -285,8 +298,28 @@ class DataCapTesterServer:
                 """)
 
         @self.app.post("/api/start")
-        async def start_test():
-            """Start the download test."""
+        async def start_test(request: Request):
+            """Start the download test with optional configuration."""
+            # Try to parse configuration from request body
+            config = None
+            try:
+                body = await request.body()
+                if body:
+                    config = json.loads(body.decode('utf-8'))
+            except:
+                pass  # No config provided or invalid JSON
+            
+            # If config is provided, update the config file
+            if config:
+                try:
+                    current_config = self.load_config()
+                    current_config.update(config)
+                    with open(self.config_path, 'w') as f:
+                        json.dump(current_config, f, indent=2)
+                    print(f"Updated configuration: {config}")
+                except Exception as e:
+                    print(f"Warning: Could not update config: {e}")
+            
             if self.start_downloader(fresh=True):
                 return {"success": True, "message": "Download test started"}
             else:
@@ -308,21 +341,7 @@ class DataCapTesterServer:
             else:
                 raise HTTPException(status_code=500, detail="Failed to stop downloader")
 
-        @self.app.post("/api/pause")
-        async def pause_test():
-            """Pause the download test."""
-            if self.pause_downloader():
-                return {"success": True, "message": "Download test paused"}
-            else:
-                raise HTTPException(status_code=500, detail="Failed to pause downloader")
 
-        @self.app.post("/api/resume")
-        async def resume_test():
-            """Resume the download test."""
-            if self.resume_downloader():
-                return {"success": True, "message": "Download test resumed"}
-            else:
-                raise HTTPException(status_code=500, detail="Failed to resume downloader")
 
         @self.app.get("/api/stats")
         async def get_stats():
@@ -335,6 +354,11 @@ class DataCapTesterServer:
         async def get_system():
             """Get system and network information."""
             return self.get_system_info()
+
+        @self.app.get("/api/config")
+        async def get_config():
+            """Get current configuration."""
+            return self.load_config()
 
         @self.app.post("/api/reset")
         async def reset_stats():
@@ -375,6 +399,45 @@ class DataCapTesterServer:
                 return {"success": True, "message": "Errors cleared"}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to clear errors: {e}")
+
+        @self.app.post("/api/clear-logs")
+        async def clear_logs():
+            """Clear downloader log file."""
+            try:
+                log_file = Path("downloader.log")
+                if log_file.exists():
+                    log_file.unlink()  # Delete the log file
+                    return {"success": True, "message": "Logs cleared"}
+                else:
+                    return {"success": True, "message": "No log file to clear"}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to clear logs: {e}")
+
+        @self.app.post("/api/save-config")
+        async def save_config(request: Request):
+            """Save configuration settings."""
+            try:
+                body = await request.body()
+                if not body:
+                    raise HTTPException(status_code=400, detail="No configuration data provided")
+                
+                config = json.loads(body.decode('utf-8'))
+                
+                # Load current config and update with new values
+                current_config = self.load_config()
+                current_config.update(config)
+                
+                # Save updated config
+                with open(self.config_path, 'w') as f:
+                    json.dump(current_config, f, indent=2)
+                
+                print(f"Configuration saved: {config}")
+                return {"success": True, "message": "Configuration saved successfully"}
+                
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid JSON data")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to save configuration: {e}")
 
         @self.app.get("/api/can-resume")
         async def can_resume():
@@ -470,6 +533,11 @@ class DataCapTesterServer:
                     # Send current stats
                     current_data = self.load_data()
                     current_data["downloader_running"] = self.is_downloader_running()
+                    
+                    # Double-check status consistency (extra safety)
+                    if current_data.get("status") in ["running", "paused"] and not current_data["downloader_running"]:
+                        current_data["status"] = "stopped"
+                    
                     await websocket.send_text(json.dumps(current_data))
                     
             except WebSocketDisconnect:

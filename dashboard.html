@@ -169,6 +169,99 @@
     </style>
 </head>
 <body class="min-h-screen professional-bg overflow-x-hidden">
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+        <div class="modal-content glass-card rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="settings" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-1">Test Configuration</h3>
+                <p class="text-slate-300 text-xs">Configure your test parameters (defaults work well for most users)</p>
+            </div>
+            
+            <form id="configForm" class="space-y-4">
+                <!-- Test URL Selection -->
+                <div>
+                    <label class="block text-white font-medium mb-2">Test Server URL</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="radio" id="cloudflare" name="testUrl" value="https://speed.cloudflare.com/__down?bytes=100000000" class="text-blue-500 focus:ring-blue-500" checked>
+                            <label for="cloudflare" class="text-slate-300 text-sm flex-grow">
+                                <span class="font-medium">Cloudflare</span> <span class="text-xs text-slate-400">(Recommended - Fast global CDN)</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="radio" id="ovh" name="testUrl" value="https://proof.ovh.net/files/1Gb.dat" class="text-blue-500 focus:ring-blue-500">
+                            <label for="ovh" class="text-slate-300 text-sm flex-grow">
+                                <span class="font-medium">OVH Network</span> <span class="text-xs text-slate-400">(European provider)</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="radio" id="custom" name="testUrl" value="custom" class="text-blue-500 focus:ring-blue-500">
+                            <label for="custom" class="text-slate-300 text-sm">Custom URL</label>
+                        </div>
+                        <div id="customUrlDiv" class="ml-5 hidden">
+                            <input type="url" id="customUrl" placeholder="https://example.com/largefile.bin" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <div class="text-xs text-slate-400 mt-1">Enter a URL to a large file on a fast server</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 p-2 bg-blue-900 bg-opacity-30 rounded-lg">
+                        <div class="text-blue-200 text-xs">
+                            <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+                            Server speed determines test performance. Cloudflare is recommended.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Cap and Settings Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Data Cap Setting -->
+                    <div class="md:col-span-2">
+                        <label for="dataCap" class="block text-white font-medium mb-2">Data Cap Threshold (GB)</label>
+                        <input type="number" id="dataCap" value="20" min="1" step="0.1" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="mt-1 p-2 bg-slate-800 rounded-lg">
+                            <div class="text-slate-300 text-xs">
+                                After exceeding this, the test assumes you have unlimited data. Helps detect throttling at usage thresholds.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Update Interval -->
+                    <div>
+                        <label for="updateInterval" class="block text-white font-medium mb-2">Update Interval (sec)</label>
+                        <input type="number" id="updateInterval" value="1" min="1" max="60" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="text-xs text-slate-400 mt-1">How often to check speed</div>
+                    </div>
+
+                    <!-- Throttle Threshold -->
+                    <div>
+                        <label for="throttleThreshold" class="block text-white font-medium mb-2">Throttle Alert (%)</label>
+                        <input type="number" id="throttleThreshold" value="30" min="10" max="90" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="text-xs text-slate-400 mt-1">Speed drop % for alert</div>
+                    </div>
+                </div>
+
+                <div class="p-2 bg-yellow-900 bg-opacity-30 rounded-lg">
+                    <div class="text-yellow-200 text-xs">
+                        <i data-lucide="alert-triangle" class="w-3 h-3 inline mr-1"></i>
+                        <strong>Throttle Alert:</strong> Only shows a warning when speed drops by this % - won't stop the test. If you have unlimited data, you can ignore this or leave default.
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 mt-6">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center justify-center">
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i>
+                        Save Settings
+                    </button>
+                    <button type="button" onclick="closeConfigModal()" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Session Mode Selection Modal -->
     <div id="sessionModal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="modal-content glass-card rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
@@ -327,9 +420,9 @@
                             <i data-lucide="play" class="w-6 h-6 mb-2"></i>
                             <span class="text-sm">Start</span>
                         </button>
-                        <button onclick="pauseTest()" class="control-button pause rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
-                            <i data-lucide="pause" class="w-6 h-6 mb-2"></i>
-                            <span class="text-sm">Pause</span>
+                        <button onclick="showConfigModal()" class="control-button pause rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
+                            <i data-lucide="settings" class="w-6 h-6 mb-2"></i>
+                            <span class="text-sm">Config</span>
                         </button>
                         <button onclick="stopTest()" class="control-button stop rounded-xl p-4 text-white font-medium transition-all duration-300 flex flex-col items-center">
                             <i data-lucide="square" class="w-6 h-6 mb-2"></i>
@@ -650,6 +743,10 @@
                         <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
                         Refresh
                     </button>
+                    <button onclick="clearLogs()" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition-colors duration-300 flex items-center">
+                        <i data-lucide="trash-2" class="w-3 h-3 mr-1"></i>
+                        Clear
+                    </button>
                     <button onclick="toggleLogs()" id="logsToggleBtn" class="text-xs bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded-lg transition-colors duration-300">
                         <i data-lucide="chevron-down" class="w-3 h-3"></i>
                     </button>
@@ -933,13 +1030,16 @@
 
         // API functions
         async function startTest() {
+            // Set immediate "starting" status
+            setTransitionalStatus('starting', 'Initializing download test...');
+            
             try {
-                // First check if there's a previous session to resume
+                // Check if there's a previous session to resume
                 const resumeCheck = await fetch('/api/can-resume');
                 const resumeData = await resumeCheck.json();
                 
                 if (resumeData.can_resume) {
-                    // Show modal to choose between continue or start fresh
+                    // Show session modal to choose between continue or start fresh
                     showSessionModal(resumeData.previous_data);
                 } else {
                     // No previous data, start fresh directly
@@ -947,6 +1047,7 @@
                 }
             } catch (error) {
                 showNotification('Error checking session status: ' + error.message, 'error');
+                clearTransitionalStatus();
             }
         }
 
@@ -1020,24 +1121,175 @@
             await actuallyStartTest(resume);
         }
 
-        async function actuallyStartTest(resume) {
+        // Configuration Modal Functions
+        async function showConfigModal() {
+            const modal = document.getElementById('configModal');
+            const modalContent = modal.querySelector('.modal-content');
+            
+            // Load current configuration
+            await loadCurrentConfig();
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            
+            // Trigger animation after a brief delay
+            setTimeout(() => {
+                modalContent.classList.add('show');
+            }, 10);
+            
+            // Setup event handlers for the form
+            setupConfigModalHandlers();
+            
+            // Refresh icons for the modal
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        }
+
+        async function loadCurrentConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Set test URL
+                const testUrl = config.test_url || 'https://speed.cloudflare.com/__down?bytes=100000000';
+                if (testUrl === 'https://speed.cloudflare.com/__down?bytes=100000000') {
+                    document.getElementById('cloudflare').checked = true;
+                } else if (testUrl === 'https://proof.ovh.net/files/1Gb.dat') {
+                    document.getElementById('ovh').checked = true;
+                } else {
+                    document.getElementById('custom').checked = true;
+                    document.getElementById('customUrl').value = testUrl;
+                    document.getElementById('customUrlDiv').classList.remove('hidden');
+                }
+                
+                // Set other values
+                document.getElementById('dataCap').value = config.data_cap_gb || 20;
+                document.getElementById('updateInterval').value = config.update_interval_seconds || 1;
+                document.getElementById('throttleThreshold').value = config.throttle_threshold || 30;
+                
+            } catch (error) {
+                console.error('Error loading current config:', error);
+                // Use defaults if config can't be loaded
+            }
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('configModal');
+            const modalContent = modal.querySelector('.modal-content');
+            
+            // Animate out
+            modalContent.classList.remove('show');
+            
+            // Hide modal after animation
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function setupConfigModalHandlers() {
+            // Handle radio button changes for custom URL
+            const radioButtons = document.querySelectorAll('input[name="testUrl"]');
+            const customUrlDiv = document.getElementById('customUrlDiv');
+            
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customUrlDiv.classList.remove('hidden');
+                    } else {
+                        customUrlDiv.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Handle form submission
+            const configForm = document.getElementById('configForm');
+            configForm.addEventListener('submit', handleConfigSubmit);
+        }
+
+        async function handleConfigSubmit(event) {
+            event.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(event.target);
+            const config = {};
+            
+            // Get test URL
+            const selectedUrl = formData.get('testUrl');
+            if (selectedUrl === 'custom') {
+                const customUrl = document.getElementById('customUrl').value.trim();
+                if (!customUrl) {
+                    showNotification('Please enter a custom URL or select a predefined server', 'error');
+                    return;
+                }
+                config.test_url = customUrl;
+            } else {
+                config.test_url = selectedUrl;
+            }
+            
+            // Get other config values
+            config.data_cap_gb = parseFloat(document.getElementById('dataCap').value) || 20;
+            config.update_interval_seconds = parseInt(document.getElementById('updateInterval').value) || 1;
+            config.throttle_threshold = parseInt(document.getElementById('throttleThreshold').value) || 30;
+            
+            // Save configuration
+            try {
+                const response = await fetch('/api/save-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Configuration saved successfully', 'success');
+                    closeConfigModal();
+                } else {
+                    showNotification('Failed to save configuration: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showNotification('Error saving configuration: ' + error.message, 'error');
+            }
+        }
+
+        async function actuallyStartTest(resume, config = null) {
             try {
                 const endpoint = resume ? '/api/start-resume' : '/api/start';
-                const response = await fetch(endpoint, { method: 'POST' });
+                const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                // If config is provided and we're not resuming, send it
+                if (config && !resume) {
+                    requestOptions.body = JSON.stringify(config);
+                }
+                
+                const response = await fetch(endpoint, requestOptions);
                 const result = await response.json();
                 
                 if (result.success) {
-                    const message = resume ? 'Session resumed successfully' : 'Fresh test started successfully';
+                    const message = resume ? 'Session resumed successfully' : 'Test started successfully';
                     showNotification(message, 'success');
+                    // Keep transitional status - it will be cleared when real status comes in
                 } else {
-                    showNotification('Failed to start test', 'error');
+                    showNotification('Failed to start test: ' + (result.error || 'Unknown error'), 'error');
+                    clearTransitionalStatus();
                 }
             } catch (error) {
                 showNotification('Error starting test: ' + error.message, 'error');
+                clearTransitionalStatus();
             }
         }
 
         async function stopTest() {
+            // Set immediate "stopping" status
+            setTransitionalStatus('stopping', 'Stopping download test...');
+            
             try {
                 const response = await fetch('/api/stop', { method: 'POST' });
                 const result = await response.json();
@@ -1045,48 +1297,33 @@
                     showNotification('Test stopped successfully', 'success');
                 } else {
                     showNotification('Failed to stop test', 'error');
+                    clearTransitionalStatus();
                 }
             } catch (error) {
                 showNotification('Error stopping test: ' + error.message, 'error');
+                clearTransitionalStatus();
             }
         }
 
-        async function pauseTest() {
-            try {
-                const response = await fetch('/api/pause', { method: 'POST' });
-                const result = await response.json();
-                if (result.success) {
-                    showNotification('Test paused successfully', 'warning');
-                } else {
-                    showNotification('Failed to pause test', 'error');
-                }
-            } catch (error) {
-                showNotification('Error pausing test: ' + error.message, 'error');
-            }
+        // Transitional status management
+        let transitionalStatus = null;
+        
+        function setTransitionalStatus(status, message) {
+            transitionalStatus = {
+                status: status,
+                message: message,
+                timestamp: Date.now()
+            };
+            updateTransitionalStatusDisplay();
         }
-
-        async function resetStats() {
-            if (confirm('Are you sure you want to reset all statistics?')) {
-                try {
-                    const response = await fetch('/api/reset', { method: 'POST' });
-                    const result = await response.json();
-                    if (result.success) {
-                        showNotification('Statistics reset successfully', 'success');
-                        // Reset acknowledgment state
-                        capExceededAcknowledged = false;
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showNotification('Failed to reset statistics', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Error resetting statistics: ' + error.message, 'error');
-                }
-            }
+        
+        function clearTransitionalStatus() {
+            transitionalStatus = null;
         }
-
-        // Enhanced UI updates
-        function updateUI(data) {
-            // Update status
+        
+        function updateTransitionalStatusDisplay() {
+            if (!transitionalStatus) return;
+            
             const statusIndicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
             const statusSubtext = document.getElementById('statusSubtext');
@@ -1096,24 +1333,92 @@
             statusIndicator.className = 'w-4 h-4 rounded-full ';
             statusPing.className = 'absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-30 ';
             
-            if (data.status === 'running') {
-                statusIndicator.className += 'bg-green-500 status-glow-running';
-                statusPing.className += 'bg-green-500';
-                statusText.textContent = 'Running';
-                statusSubtext.textContent = 'Actively monitoring bandwidth';
-                dataFlow.style.display = 'block';
-            } else if (data.status === 'paused') {
-                statusIndicator.className += 'bg-yellow-500 status-glow-paused';
-                statusPing.className += 'bg-yellow-500';
-                statusText.textContent = 'Paused';
-                statusSubtext.textContent = 'Test temporarily suspended';
+            if (transitionalStatus.status === 'starting') {
+                statusIndicator.className += 'bg-blue-500 animate-pulse';
+                statusPing.className += 'bg-blue-500';
+                statusText.textContent = 'Starting...';
+                statusSubtext.textContent = transitionalStatus.message;
                 dataFlow.style.display = 'none';
-            } else {
-                statusIndicator.className += 'bg-red-500 status-glow-stopped';
-                statusPing.className += 'bg-red-500';
-                statusText.textContent = 'Stopped';
-                statusSubtext.textContent = 'Ready to start testing';
+            } else if (transitionalStatus.status === 'stopping') {
+                statusIndicator.className += 'bg-orange-500 animate-pulse';
+                statusPing.className += 'bg-orange-500';
+                statusText.textContent = 'Stopping...';
+                statusSubtext.textContent = transitionalStatus.message;
                 dataFlow.style.display = 'none';
+            }
+        }
+
+        async function resetStats() {
+            if (confirm('Are you sure you want to reset all statistics and clear logs?')) {
+                try {
+                    // Reset statistics
+                    const resetResponse = await fetch('/api/reset', { method: 'POST' });
+                    const resetResult = await resetResponse.json();
+                    
+                    // Clear logs
+                    const clearLogsResponse = await fetch('/api/clear-logs', { method: 'POST' });
+                    const clearLogsResult = await clearLogsResponse.json();
+                    
+                    if (resetResult.success) {
+                        if (clearLogsResult.success) {
+                            showNotification('Statistics and logs reset successfully', 'success');
+                        } else {
+                            showNotification('Statistics reset, but failed to clear logs', 'warning');
+                        }
+                        // Reset acknowledgment state
+                        capExceededAcknowledged = false;
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Failed to reset statistics', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Error resetting: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Enhanced UI updates
+        function updateUI(data) {
+            // Check if we should update status (don't override transitional status unless real status is different)
+            const shouldUpdateStatus = !transitionalStatus || 
+                (data.status === 'running' && transitionalStatus.status === 'starting') ||
+                (data.status === 'stopped' && transitionalStatus.status === 'stopping');
+            
+            if (shouldUpdateStatus) {
+                // Clear transitional status when real status comes in
+                if (transitionalStatus) {
+                    clearTransitionalStatus();
+                }
+                
+                // Update status
+                const statusIndicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+                const statusSubtext = document.getElementById('statusSubtext');
+                const statusPing = document.getElementById('statusPing');
+                const dataFlow = document.getElementById('dataFlow');
+                
+                statusIndicator.className = 'w-4 h-4 rounded-full ';
+                statusPing.className = 'absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-30 ';
+                
+                if (data.status === 'running') {
+                    statusIndicator.className += 'bg-green-500 status-glow-running';
+                    statusPing.className += 'bg-green-500';
+                    statusText.textContent = 'Running';
+                    statusSubtext.textContent = 'Actively monitoring bandwidth';
+                    dataFlow.style.display = 'block';
+                } else if (data.status === 'paused') {
+                    statusIndicator.className += 'bg-yellow-500 status-glow-paused';
+                    statusPing.className += 'bg-yellow-500';
+                    statusText.textContent = 'Paused';
+                    statusSubtext.textContent = 'Test temporarily suspended';
+                    dataFlow.style.display = 'none';
+                } else {
+                    statusIndicator.className += 'bg-red-500 status-glow-stopped';
+                    statusPing.className += 'bg-red-500';
+                    statusText.textContent = 'Stopped';
+                    statusSubtext.textContent = 'Ready to start testing';
+                    dataFlow.style.display = 'none';
+                }
             }
 
             // Update error information
@@ -1481,6 +1786,25 @@
         function refreshLogs() {
             loadLogs();
             showNotification('Logs refreshed', 'info');
+        }
+
+        async function clearLogs() {
+            if (confirm('Are you sure you want to clear all logs?')) {
+                try {
+                    const response = await fetch('/api/clear-logs', { method: 'POST' });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification('Logs cleared successfully', 'success');
+                        // Refresh the logs display
+                        loadLogs();
+                    } else {
+                        showNotification('Failed to clear logs: ' + (result.error || 'Unknown error'), 'error');
+                    }
+                } catch (error) {
+                    showNotification('Error clearing logs: ' + error.message, 'error');
+                }
+            }
         }
 
         function toggleAutoScroll() {

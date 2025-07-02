@@ -1,315 +1,269 @@
-# ISP Data Cap Tester - Backend Service
+# 🌐 ISP Data Cap Tester – Verify Your Internet Performance
 
-A robust and feature-rich backend service for testing ISP data caps and monitoring internet speed in real-time. This system consists of independent processes that work together to provide comprehensive bandwidth monitoring and throttling detection.
+> Open-source dashboard to measure real-world connection speed, monitor data usage, and flag potential throttling.
 
-## 🏗️ Architecture
+ISP Data Cap Tester continuously records downstream throughput and cumulative usage, highlighting slow-downs that may indicate congestion, data-cap enforcement, or other traffic management.
 
+Are you paying for "up to 100 Mbps" but only getting 20 Mbps? Suspicious that your internet slows down after you've used a certain amount of data? This monitoring tool runs 24/7 to catch ISP throttling and data cap shenanigans with beautiful real-time charts and alerts.
+
+[![Professional Dashboard](img/graphs_and_first_cards.png)](img/full_page_screenshot.png)
+*Click image to see [full dashboard screenshot](img/full_page_screenshot.png)*
+
+### What This Tool Does
+✅ **Continuously monitors your actual internet speed**  
+✅ **Detects when your ISP throttles your connection**  
+✅ **Tracks data usage and identifies hidden caps**  
+✅ **Runs 24/7 with a beautiful web dashboard**  
+✅ **Alerts you instantly when throttling is detected**  
+
+![Network Details](img/details_and_alerts.png)
+*Real-time network monitoring with ISP details and throttling alerts*
+
+## 🚀 Quick Start (≈2 minutes)
+
+### Step 1: Download and Install
+```bash
+# Download the project
+git clone git@github.com:kanyeceejayA/datacap-tester.git
+cd datacap-tester
+
+# Install (works on Windows, Mac, Linux)
+pip install -r requirements.txt
+```
+
+### Step 2: Start Monitoring
+```bash
+# Run the dashboard
+python server.py
+```
+
+### Step 3: Open Your Browser
+- Your browser will automatically open to `http://localhost:8000`
+- Click the big **"Start Test"** button
+- Observe real-time metrics in the dashboard.
+
+That's it! The tool runs in the background and creates beautiful charts showing exactly what your ISP is doing.
+The tool now runs in the background and continually updates the dashboard with clear visualisations of your connection.
+
+## 🎯 Key Features
+
+### 🔥 Professional Real-Time Dashboard
+- **Beautiful charts** showing speed over time
+- **Live statistics** updating every second  
+- **Professional design** that looks like enterprise software
+- **Mobile responsive** - monitor from your phone
+
+### 🕵️ Advanced ISP Detection
+- **Automatic ISP identification** - knows who your provider is
+- **Baseline speed measurement** - learns your normal speeds
+- **Throttling pattern recognition** - catches sneaky slowdowns
+- **Data cap threshold detection** - identifies when limits kick in
+
+### 📊 Smart Analytics
+- **Performance analysis** - shows if you're getting what you pay for
+- **Speed consistency tracking** - identifies unreliable connections
+- **Usage patterns** - see when your internet is fastest/slowest
+- **Historical data** - track ISP behavior over days/weeks
+
+### 🚨 Intelligent Alerts
+![Connection Issues](img/connection_issue.png)
+*Automatic error detection and detailed connection health monitoring*
+
+- **Instant throttling alerts** when your speed drops
+- **Connection issue detection** with detailed error reporting
+- **Data cap warnings** before you hit limits
+- **System health monitoring** to ensure accurate testing
+
+## 🔧 Configuration Made Simple
+
+The tool includes a user-friendly configuration panel where you can:
+
+- **Choose test servers** (Cloudflare, OVH, or your own)
+- **Set data cap limits** for your plan
+- **Adjust sensitivity** for throttling detection
+- **Configure update intervals** 
+- **Customize alert thresholds**
+
+
+## 🛠️ Technical Details (For The Curious)
+
+### Architecture Overview
 ```
 ┌─────────────────┐    subprocess    ┌──────────────────┐
-│   server.py     ├─────────────────▶│  downloader.py   │
-│ (Dashboard+API) │    start/stop    │  (Background)    │
+│   Web Server    ├─────────────────▶│  Background      │
+│  (Dashboard)    │    management    │  Downloader      │
 └─────────────────┘                  └──────────────────┘
          │                                    │
          │ reads                              │ writes
          ▼                                    ▼
 ┌─────────────────────────────────────────────────────────┐
-│                  data.json                              │
-│ {"speed": 45.2, "total_gb": 12.5, "status": "running"} │
+│                Shared Data Store                        │
+│   Real-time statistics, charts, logs, config           │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 📁 File Structure
+### Technology Stack
+- **Backend**: Python with FastAPI (async web framework)
+- **Frontend**: Modern HTML5 with TailwindCSS and Chart.js
+- **Real-time**: WebSocket connections for live updates
+- **Networking**: HTTPX for high-performance HTTP downloads
+- **Data**: JSON-based storage (easily readable/exportable)
 
+### File Structure
 ```
 datacap-tester/
-├── server.py           # Web server + process manager (374 lines)
-├── downloader.py       # Independent download worker (272 lines)
-├── dashboard.html      # Web dashboard interface (396 lines)
-├── data.json          # Shared data storage
-├── config.json        # Configuration settings
+├── server.py          # Main web server (584 lines)
+├── downloader.py      # Background monitoring engine
+├── dashboard.html     # Professional web interface (1,846 lines!)
+├── config.json        # User configuration
+├── data.json          # Real-time statistics
 ├── requirements.txt   # Python dependencies
-├── test_backend.py    # Backend test suite
-└── README.md          # This file
+└── README.md          # This awesome guide!
 ```
 
-## 🚀 Quick Start
+## 🌐 API Reference (For Developers)
 
-### 1. Install Dependencies
+### REST Endpoints
 ```bash
-pip install -r requirements.txt
+# Control the monitoring
+POST /api/start          # Start monitoring
+POST /api/stop           # Stop monitoring  
+POST /api/reset          # Reset all statistics
+
+# Get data
+GET  /api/stats          # Current statistics
+GET  /api/system         # System information
+GET  /api/config         # Current configuration
+GET  /api/logs           # Recent log entries
+
+# Configuration  
+POST /api/save-config    # Update settings
+GET  /api/can-resume     # Check for previous session
 ```
 
-### 2. Run Tests (Optional)
-```bash
-python test_backend.py
+### WebSocket Real-time Feed
+```javascript
+// Connect to live data stream
+const ws = new WebSocket('ws://localhost:8000/ws');
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log(`Speed: ${data.speed_mbps} Mbps`);
+    console.log(`Total: ${data.total_gb} GB`);
+};
 ```
 
-### 3. Start the Server
-```bash
-python server.py
-```
-
-### 4. Access Dashboard
-- Open your browser to `http://localhost:8000`
-- The dashboard will load automatically
-- Click "Start Test" to begin monitoring
-
-## 🔧 Core Components
-
-### server.py - Main Web Server
-**Responsibilities:**
-- Serve web dashboard at `http://localhost:8000`
-- Manage `downloader.py` subprocess lifecycle
-- Provide REST API endpoints
-- WebSocket for real-time updates
-- System information gathering
-
-**Key Features:**
-- ✅ Process management with graceful shutdown
-- ✅ Real-time WebSocket updates
-- ✅ External IP and ISP detection
-- ✅ System resource monitoring
-- ✅ Automatic browser launching
-
-### downloader.py - Download Worker
-**Responsibilities:**
-- Continuous downloading from test servers
-- Real-time speed calculation
-- Throttling pattern detection
-- Data persistence to JSON
-- Signal-based pause/resume
-
-**Key Features:**
-- ✅ Async HTTP streaming with `httpx`
-- ✅ Multiple fallback test URLs
-- ✅ Intelligent throttling detection
-- ✅ Rolling statistics windows
-- ✅ Memory-efficient data handling
-- ✅ Graceful error recovery
-
-### dashboard.html - Web Interface
-**Features:**
-- ✅ Real-time speed monitoring
-- ✅ Interactive charts with Chart.js
-- ✅ System information display
-- ✅ Control buttons (Start/Stop/Pause/Resume)
-- ✅ Data cap progress tracking
-- ✅ Throttling alerts
-- ✅ Responsive mobile design
-
-## 🌐 API Endpoints
-
-### Core Control
-- `POST /api/start` - Start download test
-- `POST /api/stop` - Stop download test  
-- `POST /api/pause` - Pause download test
-- `POST /api/resume` - Resume download test
-- `POST /api/reset` - Reset all statistics
-
-### Data Retrieval
-- `GET /api/stats` - Current download statistics
-- `GET /api/system` - System and network information
-- `WS /ws` - WebSocket for real-time updates
-
-### API Response Example
+### Sample API Response
 ```json
 {
   "status": "running",
-  "speed_mbps": 45.2,
-  "total_gb": 12.5,
+  "speed_mbps": 87.3,
+  "total_gb": 15.2,
   "session_duration": 3600,
-  "avg_speed": 42.1,
-  "peak_speed": 98.3,
+  "avg_speed": 89.1,
+  "peak_speed": 145.8,
   "throttle_detected": false,
-  "baseline_speed": 47.8,
-  "cap_percentage": 25.0,
-  "data_points": [...],
-  "last_update": "2024-01-01T12:00:00Z"
+  "cap_percentage": 30.4,
+  "isp": "MTN UG",
+  "external_ip": "203.0.113.42",
+  "last_update": "2024-01-15T14:30:00Z"
 }
 ```
 
-## ⚙️ Configuration
+## ⚙️ Advanced Configuration
 
-### config.json
+### Multiple Test Servers
 ```json
 {
   "test_urls": [
     "https://speed.cloudflare.com/__down?bytes=100000000",
-    "https://proof.ovh.net/files/1Gb.dat",
+    "https://proof.ovh.net/files/1Gb.dat", 
     "http://speedtest.tele2.net/1GB.zip"
-  ],
-  "data_cap_gb": 50,
-  "update_interval_seconds": 2,
-  "throttle_threshold_percent": 30,
-  "port": 8000
+  ]
 }
 ```
 
-**Configuration Options:**
-- `test_urls`: List of download test servers
-- `data_cap_gb`: Data limit for testing (1-1000+ GB)
-- `update_interval_seconds`: How often to save data
-- `throttle_threshold_percent`: Sensitivity for throttling detection
-- `port`: Web server port
+### Throttling Detection Settings
+```json
+{
+  "throttle_threshold_percent": 30,
+  "baseline_samples": 50,
+  "detection_window": 100
+}
+```
 
-## 🧪 Advanced Features
+### Data Cap Monitoring
+```json
+{
+  "data_cap_gb": 1000,
+  "cap_warning_percent": 80,
+  "post_cap_monitoring": true
+}
+```
 
-### Throttling Detection
-The system implements sophisticated throttling detection:
+## 🧪 Testing & Development
 
-1. **Baseline Establishment**: Records initial speed samples
-2. **Rolling Analysis**: Monitors recent vs baseline performance  
-3. **Threshold Detection**: Configurable sensitivity (default 30%)
-4. **Pattern Recognition**: Identifies consistent speed drops
-
-### Real-time Monitoring
-- **Speed Sampling**: 30-sample rolling window
-- **Data Points**: Up to 1000 chart points stored
-- **WebSocket Updates**: 2-second real-time refresh
-- **Chart Updates**: Smooth animations without flicker
-
-### System Information
-Automatically detects and displays:
-- External IP address
-- ISP name and organization
-- Geographic location
-- System resource usage
-- Connection quality metrics
-
-## 🔒 Security & Privacy
-
-- **No Data Storage**: Downloads are streamed, not saved to disk
-- **Local Only**: All data stays on your machine
-- **No Tracking**: No analytics or external reporting
-- **Open Source**: Full code transparency
-
-## 🛠️ Development & Testing
-
-### Running Tests
+### Run the Test Suite
 ```bash
-# Test core components
 python test_backend.py
-
-# Test with server running (in another terminal)
-python server.py
-python test_backend.py  # Will include API tests
 ```
 
 ### Manual Testing
 ```bash
-# Start server
-python server.py
-
-# In another terminal, test individual components
-python -c "import downloader; print('Downloader OK')"
-python -c "import server; print('Server OK')"
+# Test individual components
+python -c "import server; print('✅ Server OK')"
+python -c "import downloader; print('✅ Downloader OK')"
 
 # Test API endpoints
 curl http://localhost:8000/api/stats
 curl -X POST http://localhost:8000/api/start
 ```
 
-## 📊 Performance & Specifications
+### Performance Specifications
+- **CPU Usage**: 5-15% during active monitoring
+- **Memory**: 50-100MB total
+- **Network**: Configurable chunk sizes (10-100MB)
+- **Storage**: Minimal (only small JSON files)
+- **Scale**: Tested from 1 Mbps to 1000+ Mbps connections
 
-### Resource Usage
-- **CPU**: ~5-15% during active downloading
-- **Memory**: ~50-100MB for both processes combined
-- **Network**: Configurable, typically 10-100MB chunks
-- **Storage**: Minimal (only JSON data files)
+## 🔒 Privacy & Security
 
-### Scaling
-- **Data Cap Range**: 1GB to unlimited
-- **Speed Range**: 1 Mbps to 1000+ Mbps tested
-- **Session Duration**: Hours to days supported
-- **Chart Performance**: Optimized for 1000+ data points
+- **🏠 100% Local**: All data stays on your computer
+- **🚫 No Tracking**: Zero analytics or external reporting  
+- **🔓 Open Source**: Full code transparency
+- **🛡️ Secure**: No data stored on disk, only statistics
+- **🔐 Private**: Your ISP can't tell you're monitoring them
 
-## 🔧 Troubleshooting
+## 🚀 Deployment Options
 
-### Common Issues
-
-**"Cannot connect to server"**
+### Home/Personal Use
 ```bash
-# Check if server is running
-ps aux | grep python
-# Kill existing processes if needed
-pkill -f server.py
-# Restart server
+# Simple - just run it
 python server.py
 ```
 
-**"Downloader not starting"**
+### Always-On Monitoring (Linux)
 ```bash
-# Check file permissions
-ls -la downloader.py
-# Test downloader directly
-python downloader.py
+# Create systemd service for 24/7 monitoring
+sudo systemctl enable datacap-tester
+sudo systemctl start datacap-tester
 ```
 
-**"Speed always shows 0"**
-- Check internet connection
-- Verify test URLs in config.json
-- Check firewall/proxy settings
 
-### Log Analysis
-Both processes output detailed logs:
-```bash
-# Server logs
-python server.py 2>&1 | tee server.log
+## 🤝 Contributing & Support
 
-# Downloader logs (when run directly)
-python downloader.py 2>&1 | tee downloader.log
-```
+### Found a Bug? 
+- 🐛 [Report issues](https://github.com/kanyeceejayA/datacap-tester/issues)
+- 💡 [Request features](https://github.com/kanyeceejayA/datacap-tester/discussions)
+- 🔧 [Submit pull requests](https://github.com/kanyeceejayA/datacap-tester/pulls)
 
-## 🚀 Production Deployment
+### Next Steps
+A JS version of this tool to be run in browser. anyone should be able to click a button and start monitoring.
 
-### Systemd Service (Linux)
-```ini
-[Unit]
-Description=ISP Data Cap Tester
-After=network.target
-
-[Service]
-Type=simple
-User=your-user
-WorkingDirectory=/path/to/datacap-tester
-ExecStart=/usr/bin/python3 server.py
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### Docker Support
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 8000
-CMD ["python", "server.py"]
-```
-
-## 📈 Future Enhancements
-
-- [ ] SQLite database for historical data
-- [ ] Email/SMS alerts for throttling
-- [ ] Multiple concurrent download streams
-- [ ] Advanced analytics and reporting
-- [ ] Mobile app companion
-- [ ] Cloud sync capabilities
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Run tests: `python test_backend.py`
-4. Submit a pull request
-
-## 📄 License
-
-This project is open source. Use, modify, and distribute freely.
 
 ---
 
-**Built with ❤️ for monitoring ISP behavior and data caps** 
+## 🎉 Ready to Catch Your ISP?
+
+**[Download Now](https://github.com/kanyeceejayA/datacap-tester/archive/main.zip)** and start monitoring in 2 minutes!
+
+*Built because MTN UG refused to answet my x post about having data caps*
